@@ -5,7 +5,7 @@ import os
 import sharpy.utils.algebra as algebra
 
 channel = 4
-case_name = 'simple_HALE_mpc_mass_centredrop_case_puma_' + str(channel)
+case_name = 'simple_HALE_mpc_gust_case_puma_' + str(channel)
 route = os.path.dirname(os.path.realpath(__file__)) + '/'
 
 # case files folder
@@ -58,7 +58,7 @@ sigma = 1.5
 lambda_dihedral = 20*np.pi/180
 
 # gust settings
-gust_intensity = 0.20
+gust_intensity = 0.2*u_inf
 gust_length = 1*u_inf
 gust_offset = 0.5*u_inf
 
@@ -135,7 +135,7 @@ n_tstep = round(physical_time/dt)
 # lumped mass
 mass_time = np.zeros((n_tstep, 1))
 mass_time[:, 0] = 50
-mass_time[20:, 0] = 25
+mass_time[20:, 0] = 50
 np.savetxt(cases_folder + '/mass00.txt', mass_time)
 print(cases_folder + '/mass00.txt')
 structural_generator_settings = {'change_variable': ['lumped_mass'],
@@ -835,9 +835,18 @@ def generate_solver_file():
                             'rollup_tolerance': 1e-4,
                             'vortex_radius': 1e-8,
                             'gamma_dot_filtering': 6,
-                            'velocity_field_generator': 'SteadyVelocityField',
+                            #'velocity_field_generator': 'SteadyVelocityField',
+                            #'velocity_field_input': {'u_inf': int(not free_flight)*u_inf,
+                            #                         'u_inf_direction': [1., 0, 0]},
+                            'velocity_field_generator': 'GustVelocityField',
                             'velocity_field_input': {'u_inf': int(not free_flight)*u_inf,
-                                                     'u_inf_direction': [1., 0, 0]},
+                                                     'u_inf_direction': [1., 0, 0],
+                                                     'offset': gust_offset,
+                                                     'relative_motion': relative_motion,
+                                                     'gust_shape': '1-cos',
+                                                     'gust_parameters':{
+                                                         'gust_length': gust_length,
+                                                         'gust_intensity': gust_intensity}},
                             'rho': rho,
                             'n_time_steps': n_tstep,
                             'dt': dt}

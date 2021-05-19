@@ -1,96 +1,80 @@
 #! /usr/bin/env python3
 import h5py as h5
-import sharpy.sharpy_main
 import numpy as np
 import os
 import sharpy.utils.algebra as algebra
 
-# alpha_deg = 0
-# for alpha_deg in [0, 1., 2., 3., 4.][::-1]:
-#for alpha_deg in [4.1514, 5.0, 4., 3. , 2. , 1., 0.]:
-for alpha_deg in [0]:
-    case_name = 'simple_HALE_nuvlm_tb_alpha{:04g}'.format(alpha_deg * 100)
-
+for case in range(40):
+    case_no=case+1;
+    case_name = 'simple_HALE_prescribed_struct_case_puma_0'+str(case_no)
     route = os.path.dirname(os.path.realpath(__file__)) + '/'
 
-    # EXECUTION
+# case files folder
+    cases_folder = route + '/cases/' + case_name + '/'
+    if not os.path.isdir(cases_folder):
+        os.makedirs(cases_folder, exist_ok=True)
+
+# EXECUTION
     flow = ['BeamLoader',
             'AerogridLoader',
             # 'NonLinearStatic',
-            'StaticUvlm',
+            # 'StaticUvlm',
             # 'StaticTrim',
-            # 'StaticCoupled',
+            'StaticCoupled',
             # 'BeamLoads',
-            'AeroForcesCalculator',
-            'AerogridPlot',
             'BeamPlot',
-            # 'DynamicCoupled',
-            'Modal',
-            'LinearAssembler',
+            'AerogridPlot',
+            'DynamicCoupled',
+            # 'Modal',
+            # 'LinearAssember',
             # 'AsymptoticStability',
             'SaveData',
-            # 'LinDynamicSim',
             ]
 
-    # if free_flight is False, the motion of the centre of the wing is prescribed.
-    free_flight = True
-    if not free_flight:
-        case_name += '_prescribed'
-        amplitude = 0*np.pi/180
-        period = 3
-        case_name += '_amp_' + str(amplitude).replace('.', '') + '_period_' + str(period)
+# if free_flight is False, the motion of the centre of the wing is prescribed.
+    free_flight = False
+#if not free_flight:
+#    case_name += '_prescribed'
+#    amplitude = 0*np.pi/180
+#    period = 3
+#    case_name += '_amp_' + str(amplitude).replace('.', '') + '_period_' + str(period)
 
-    lumped_mass_factor = 1
-    case_name += '_lm{:g}'.format(lumped_mass_factor)
-
-    ## ROM
-    rom = False
-    # linear settings
-    num_modes = 20
-    case_name += '_rom{:g}_nmodes{:g}'.format(rom, num_modes)
-
-    # FLIGHT CONDITIONS
-    # the simulation is set such that the aircraft flies at a u_inf velocity while
-    # the air is calm.
+# FLIGHT CONDITIONS
+# the simulation is set such that the aircraft flies at a u_inf velocity while
+# the air is calm.
     u_inf = 10
     rho = 1.225
 
-    # trim sigma = 1.5
-    alpha = alpha_deg * np.pi/180
+
+# trim sigma = 1.5  |  |
+    alpha = 4.1566 * np.pi/180
     beta = 0
     roll = 0
     gravity = 'on'
-    cs_deflection = 0*np.pi/180
+    cs_deflection = -1.1234 * np.pi/180
     rudder_static_deflection = 0.0
     rudder_step = 0.0*np.pi/180
-    thrust = 5.9443
+    thrust = 4.8674
     sigma = 1.5
     lambda_dihedral = 20*np.pi/180
 
-    # 8 | 4.1515 | -1.1249 | 4.7300 | 0.0088 | -0.0000 | 0.0005 | 0.0000 | -0.0005 | 0.0000
-    # m = 16
-    # alpha = 4.1515 * np.pi / 180
-    # cs_deflection = -1.1249 * np.pi / 180
-    # thrust  = 4.7300
-
-
-    # gust settings
+# gust settings
     gust_intensity = 0.20
     gust_length = 1*u_inf
     gust_offset = 0.5*u_inf
 
 
-    # numerics
+# numerics
     n_step = 5
     structural_relaxation_factor = 0.6
     relaxation_factor = 0.35
-    tolerance = 1e-6
+    tolerance = 1e-4
     fsi_tolerance = 1e-4
 
-    num_cores = 2
+    num_cores = 10
 
-    # MODEL GEOMETRY
-    # beam
+# MODEL GEOMETRY
+# beam
     span_main = 16.0
     lambda_main = 0.25
     ea_main = 0.3
@@ -117,51 +101,49 @@ for alpha_deg in [0]:
     m_bar_tail = 0.3
     j_bar_tail = 0.08
 
-    # lumped masses
+# lumped masses
     n_lumped_mass = 1
     lumped_mass_nodes = np.zeros((n_lumped_mass, ), dtype=int)
     lumped_mass = np.zeros((n_lumped_mass, ))
-    lumped_mass[0] = 50 * lumped_mass_factor
+    lumped_mass[0] = 50
     lumped_mass_inertia = np.zeros((n_lumped_mass, 3, 3))
     lumped_mass_position = np.zeros((n_lumped_mass, 3))
 
-    # aero
+# aero
     chord_main = 1.0
     chord_tail = 0.5
     chord_fin = 0.5
 
-    # DISCRETISATION
-    # spatial discretisation
-    # chordiwse panels
-    m = 16
-    m_star_factor = 10
-    # spanwise elements
-    n_elem_multiplier = 4
+# DISCRETISATION
+# spatial discretisation
+# chordiwse panels
+    m = 16  #4 #16
+    m_star_factor = 10  #4#10
+# spanwise elements
+    n_elem_multiplier = 4  #2#4
     n_elem_main = int(4*n_elem_multiplier)
     n_elem_tail = int(2*n_elem_multiplier)
     n_elem_fin = int(2*n_elem_multiplier)
     n_elem_fuselage = int(2*n_elem_multiplier)
     n_surfaces = 5
 
-    # temporal discretisation
-    physical_time = 30
+# temporal discretisation
+    physical_time = 10
     tstep_factor = 1.
     dt = 1.0/m/u_inf*tstep_factor
     n_tstep = round(physical_time/dt)
 
+# lumped mass
+    mass_time = np.zeros((n_tstep, 1))
+    mass_time[:, 0] = 50
+    mass_time[20:, 0] = 50
+    np.savetxt(cases_folder + '/mass00.txt', mass_time)
+    print(cases_folder + '/mass00.txt')
+    structural_generator_settings = {'change_variable': ['lumped_mass'],
+                                     'variable_index': [0],
+                                     'file_list': [cases_folder + '/mass00.txt']}
 
-    # linear files
-    elevator = 30 * np.pi / 180
-    rudder = 25 * np.pi / 180
-
-    # END OF INPUT-----------------------------------------------------------------
-
-    # case files folder
-    cases_folder = route + '/cases/' + case_name + '/'
-    if not os.path.isdir(cases_folder):
-        os.makedirs(cases_folder, exist_ok=True)
-
-    # beam processing
+# beam processing - need a few of these variables
     n_node_elem = 3
     span_main1 = (1.0 - lambda_main)*span_main
     span_main2 = lambda_main*span_main
@@ -169,7 +151,125 @@ for alpha_deg in [0]:
     n_elem_main1 = round(n_elem_main*(1 - lambda_main))
     n_elem_main2 = n_elem_main - n_elem_main1
 
-    # total number of elements
+# inout variables
+# tips, change of dihedral and root
+#list_of_nodes = [n_elem_main1 * 2, n_elem_main * 2, n_elem_main * 2 + n_elem_main1 * 2, n_elem_main * 2 * 2]
+#list_of_nodes = range( 2 * (2 * ( n_elem_main1 + n_elem_main2 + n_elem_tail ) + n_elem_fuselage + n_elem_fin )+1)
+#list_of_pos = ['pos'] * len(list_of_nodes)
+#list_of_psi = ['psi'] * len(list_of_nodes)
+#list_of_pos_dot = ['pos_dot'] * len(list_of_nodes)
+#list_of_psi_dot = ['psi_dot'] * len(list_of_nodes)
+#list_of_aero_forces = ['aero_forces'] * len(list_of_nodes)
+
+    list_of_inputs = []
+    in1 = {'name': 'control_surface_deflection',
+           'var_type': 'control_surface',
+           'inout': 'in',
+           'position': 0}
+    list_of_inputs.append(in1)
+
+    in2 = {'name': 'app_forces',
+           'var_type': 'node',
+           'inout': 'in',
+           'position': 0,
+           'index': 1}
+    list_of_inputs.append(in2)
+
+    list_of_gen_outputs = [
+        {'name': 'dt',
+         'inout': 'out'},
+        {'name': 'nt',
+         'inout': 'out'}
+    ]
+
+    list_of_struct_data = []
+# for_pos
+#for ax in range(3):
+#    struct_data = dict()
+#    struct_data['name'] = 'for_pos'
+#    struct_data['var_type'] = 'node'
+#    struct_data['position'] = 0
+#    struct_data['index'] = ax
+#    struct_data['inout'] = 'out'
+#    struct_data['frame'] = 'ga'
+#
+#    list_of_struct_data.append(struct_data)
+# for_vel
+    for ax in range(3):
+        struct_data = dict()
+        struct_data['name'] = 'for_vel'
+        struct_data['var_type'] = 'node'
+        struct_data['position'] = 0
+        struct_data['index'] = ax
+        struct_data['inout'] = 'out'
+        struct_data['frame'] = 'ba'
+        list_of_struct_data.append(struct_data)
+
+#for i, node in enumerate(list_of_nodes):
+#    for ax in range(3):
+#        struct_data = dict()
+#        struct_data['name'] = list_of_pos[i]
+#        struct_data['var_type'] = 'node'
+#        struct_data['position'] = node
+#        struct_data['index'] = ax
+#        struct_data['inout'] = 'out'
+#        struct_data['frame'] = 'ba'
+#        list_of_struct_data.append(struct_data)
+#
+#for i, node in enumerate(list_of_nodes):
+#    for ax in range(3):
+#        struct_data = dict()
+#        struct_data['name'] = list_of_psi[i]
+#        struct_data['var_type'] = 'node'
+#        struct_data['position'] = node
+#        struct_data['index'] = ax
+#        struct_data['inout'] = 'out'
+#        struct_data['frame'] = 'ba'
+#        list_of_struct_data.append(struct_data)
+#
+#for i, node in enumerate(list_of_nodes):
+#    for ax in range(3):
+#        struct_data = dict()
+#        struct_data['name'] = list_of_pos_dot[i]
+#        struct_data['var_type'] = 'node'
+#        struct_data['position'] = node
+#        struct_data['index'] = ax
+#        struct_data['inout'] = 'out'
+#        struct_data['frame'] = 'ba'
+#        list_of_struct_data.append(struct_data)
+#
+#for i, node in enumerate(list_of_nodes):
+#    for ax in range(3):
+#        struct_data = dict()
+#        struct_data['name'] = list_of_psi_dot[i]
+#        struct_data['var_type'] = 'node'
+#        struct_data['position'] = node
+#        struct_data['index'] = ax
+#        struct_data['inout'] = 'out'
+#        struct_data['frame'] = 'ba'
+#        list_of_struct_data.append(struct_data)
+
+#for i, node in enumerate(list_of_nodes):
+#    for ax in range(6):
+#        struct_data = dict()
+#        struct_data['name'] = list_of_aero_forces[i]
+#        struct_data['var_type'] = 'node'
+#        struct_data['position'] = node
+#        struct_data['index'] = ax
+#        struct_data['inout'] = 'out'
+#        struct_data['frame'] = 'ba'
+#        list_of_struct_data.append(struct_data)
+
+    import yaml
+    inout_variables_file = './variables.yaml'
+    with open(inout_variables_file, 'w') as f:
+        yaml.dump(list_of_inputs + list_of_gen_outputs + list_of_struct_data, f, sort_keys=False)
+
+
+# END OF INPUT-----------------------------------------------------------------
+
+
+# total number of elements
     n_elem = 0
     n_elem += n_elem_main1 + n_elem_main1
     n_elem += n_elem_main2 + n_elem_main2
@@ -177,7 +277,7 @@ for alpha_deg in [0]:
     n_elem += n_elem_fin
     n_elem += n_elem_tail + n_elem_tail
 
-    # number of nodes per part
+# number of nodes per part
     n_node_main1 = n_elem_main1*(n_node_elem - 1) + 1
     n_node_main2 = n_elem_main2*(n_node_elem - 1) + 1
     n_node_main = n_node_main1 + n_node_main2 - 1
@@ -185,7 +285,7 @@ for alpha_deg in [0]:
     n_node_fin = n_elem_fin*(n_node_elem - 1) + 1
     n_node_tail = n_elem_tail*(n_node_elem - 1) + 1
 
-    # total number of nodes
+# total number of nodes
     n_node = 0
     n_node += n_node_main1 + n_node_main1 - 1
     n_node += n_node_main2 - 1 + n_node_main2 - 1
@@ -194,7 +294,7 @@ for alpha_deg in [0]:
     n_node += n_node_tail - 1
     n_node += n_node_tail - 1
 
-    # stiffness and mass matrices
+# stiffness and mass matrices
     n_stiffness = 3
     base_stiffness_main = sigma*np.diag([ea, ga, ga, gj, eiy, eiz])
     base_stiffness_fuselage = base_stiffness_main.copy()*sigma_fuselage
@@ -218,8 +318,8 @@ for alpha_deg in [0]:
                               j_bar_tail*0.5])
 
 
-    # PLACEHOLDERS
-    # beam
+# PLACEHOLDERS
+# beam
     x = np.zeros((n_node, ))
     y = np.zeros((n_node, ))
     z = np.zeros((n_node, ))
@@ -235,7 +335,7 @@ for alpha_deg in [0]:
     app_forces = np.zeros((n_node, 6))
 
 
-    # aero
+# aero
     airfoil_distribution = np.zeros((n_elem, n_node_elem), dtype=int)
     surface_distribution = np.zeros((n_elem,), dtype=int) - 1
     surface_m = np.zeros((n_surfaces, ), dtype=int)
@@ -246,23 +346,16 @@ for alpha_deg in [0]:
     chord = np.zeros((n_elem, n_node_elem,))
     elastic_axis = np.zeros((n_elem, n_node_elem,))
 
-    # linear time domain vectors
-    # for m = 16 only
-    input_vec = np.zeros((10, num_modes * 3 + 4))
-    x0 = np.zeros(10)
-    input_vec[5:, 2 * num_modes] = elevator
-    input_vec[5:, 2 * num_modes + 1] = rudder
 
-
-    # FUNCTIONS-------------------------------------------------------------
+# FUNCTIONS-------------------------------------------------------------
     def clean_test_files():
         fem_file_name = cases_folder + case_name + '.fem.h5'
         if os.path.isfile(fem_file_name):
             os.remove(fem_file_name)
 
-        dyn_file_name = cases_folder + case_name + '.dyn.h5'
-        if os.path.isfile(dyn_file_name):
-            os.remove(dyn_file_name)
+       # dyn_file_name = cases_folder + case_name + '.dyn.h5'
+       # if os.path.isfile(dyn_file_name):
+       #     os.remove(dyn_file_name)
 
         aero_file_name = cases_folder + case_name + '.aero.h5'
         if os.path.isfile(aero_file_name):
@@ -275,10 +368,6 @@ for alpha_deg in [0]:
         flightcon_file_name = cases_folder + case_name + '.flightcon.txt'
         if os.path.isfile(flightcon_file_name):
             os.remove(flightcon_file_name)
-
-        linear_files = cases_folder + case_name + '.lininput.h5'
-        if os.path.isfile(linear_files):
-            os.remove(linear_files)
 
     def generate_dyn_file():
         global dt
@@ -522,14 +611,14 @@ for alpha_deg in [0]:
 
         # control surface type 0 = static
         # control surface type 1 = dynamic
-        control_surface_type[0] = 0
+        control_surface_type[0] = 2
         control_surface_deflection[0] = cs_deflection
-        control_surface_chord[0] = m # m
-        control_surface_hinge_coord[0] = -0.25 * 1 # nondimensional wrt elastic axis (+ towards the trailing edge)
+        control_surface_chord[0] = m
+        control_surface_hinge_coord[0] = -0.25 # nondimensional wrt elastic axis (+ towards the trailing edge)
 
         control_surface_type[1] = 0
         control_surface_deflection[1] = rudder_static_deflection
-        control_surface_chord[1] = m // 2 #1
+        control_surface_chord[1] = 1
         control_surface_hinge_coord[1] = -0. # nondimensional wrt elastic axis (+ towards the trailing edge)
 
         we = 0
@@ -596,10 +685,6 @@ for alpha_deg in [0]:
         # twist[end_of_fuselage_node] = 0
         # twist[wn:] = 0
         # elastic_axis[wn:wn + num_node_main] = fin_ea
-
-        #remove last elem of the control surface
-        control_surface[i_elem, :] = -1
-
         we += n_elem_fin
         wn += n_node_fin - 1
         #
@@ -703,15 +788,6 @@ for alpha_deg in [0]:
         return x_vec, y_vec
 
 
-    def generate_linear_sim_files(x0, input_vec):
-
-        with h5.File(cases_folder + '/' + case_name + '.lininput.h5', 'a') as h5file:
-            x0 = h5file.create_dataset(
-                'x0', data=x0)
-            u = h5file.create_dataset(
-                'u', data=input_vec)
-
-
     def generate_solver_file():
         file_name = cases_folder + case_name + '.sharpy'
         settings = dict()
@@ -750,8 +826,8 @@ for alpha_deg in [0]:
                                   'n_rollup': 0,
                                   'rollup_dt': dt,
                                   'rollup_aic_refresh': 1,
-                                  'vortex_radius': 1e-8,
                                   'rollup_tolerance': 1e-4,
+                                  'vortex_radius': 1e-8,
                                   'velocity_field_generator': 'SteadyVelocityField',
                                   'velocity_field_input': {'u_inf': u_inf,
                                                            'u_inf_direction': [1., 0, 0]},
@@ -793,11 +869,11 @@ for alpha_deg in [0]:
                                                'gravity': 9.81,
                                                'num_steps': n_tstep,
                                                'dt': dt,
-                                               'initial_velocity': u_inf*int(free_flight)}
+                                               'initial_velocity': u_inf}
 
         relative_motion = 'off'
-        if not free_flight:
-            relative_motion = 'on'
+#    if not free_flight:
+#        relative_motion = 'on'
         settings['StepUvlm'] = {'print_info': 'off',
                                 'horseshoe': 'off',
                                 'num_cores': num_cores,
@@ -806,39 +882,56 @@ for alpha_deg in [0]:
                                 'rollup_dt': dt,
                                 'rollup_aic_refresh': 1,
                                 'rollup_tolerance': 1e-4,
-                                'gamma_dot_filtering': 6,
                                 'vortex_radius': 1e-8,
-                                'velocity_field_generator': 'GustVelocityField',
-                                'velocity_field_input': {'u_inf': int(not free_flight)*u_inf,
-                                                         'u_inf_direction': [1., 0, 0],
-                                                         'gust_shape': '1-cos',
-                                                         'gust_length': gust_length,
-                                                         'gust_intensity': gust_intensity*u_inf,
-                                                         'offset': gust_offset,
-                                                         'span': span_main,
-                                                         'relative_motion': relative_motion},
+                                'gamma_dot_filtering': 6,
+                                'velocity_field_generator': 'SteadyVelocityField',
+                                'velocity_field_input': {'u_inf': int(free_flight)*u_inf,
+                                                         'u_inf_direction': [1., 0, 0]},
                                 'rho': rho,
                                 'n_time_steps': n_tstep,
                                 'dt': dt}
+        settings['PrescribedStructure'] = {'num_steps': n_tstep,
+                                            'dt': dt,
+                                            'input_file': cases_folder + case_name + '.h5' }
 
         if free_flight:
             solver = 'NonLinearDynamicCoupledStep'
         else:
-            solver = 'NonLinearDynamicPrescribedStep'
+            solver = 'PrescribedStructure'
         settings['DynamicCoupled'] = {'structural_solver': solver,
                                       'structural_solver_settings': settings[solver],
                                       'aero_solver': 'StepUvlm',
                                       'aero_solver_settings': settings['StepUvlm'],
-                                      'fsi_substeps': 200,
+                                      'runtime_generators': {'ModifyStructure': structural_generator_settings},
+                                      'fsi_substeps': 1000,
                                       'fsi_tolerance': fsi_tolerance,
                                       'relaxation_factor': relaxation_factor,
                                       'minimum_steps': 1,
-                                      'relaxation_steps': 150,
+                                      'relaxation_steps': 100,
                                       'final_relaxation_factor': 0.5,
-                                      'n_time_steps': 1,
+                                      'n_time_steps': n_tstep,
                                       'dt': dt,
-                                      'include_unsteady_force_contribution': 'off',
-                                      'postprocessors': ['BeamLoads', 'BeamPlot', 'AerogridPlot'],
+                                      'network_settings': {
+                                          'console_log_level': 'warning',
+                                          'log_name': route + '/output/{:s}/network_output.log'.format(case_name),
+                                          'received_data_filename': route + '/output/{:s}/input_history.txt'.format(case_name),
+                                          'variables_filename': inout_variables_file,
+                                          'byte_ordering': 'big', # 'big',
+                                          'input_network_settings': {
+                                              'address': 'ae-flutter',
+                                              'port': 65000+case_no,
+                                          },
+                                          'output_network_settings': {
+                                              'address': 'ae-flutter',
+                                              'port': 64000+case_no,
+                                              'send_on_demand': 'off',
+                                              'destination_address': ['ae-ma19515'],
+                                              'destination_ports': [63000+case_no],
+                                          }
+                                      },
+                                      'include_unsteady_force_contribution': 'on',
+                                      'postprocessors': ['BeamLoads', 'BeamPlot', 'StallCheck', 'AerogridPlot',
+                                                         'WriteVariablesTime'],
                                       'postprocessors_settings': {'BeamLoads': {'folder': route + '/output/',
                                                                                 'csv_output': 'off'},
                                                                   'BeamPlot': {'folder': route + '/output/',
@@ -849,7 +942,26 @@ for alpha_deg in [0]:
                                                                       'include_rbm': 'on',
                                                                       'include_applied_forces': 'on',
                                                                       'minus_m_star': 0},
-                                                                  }}
+                                                                  'StallCheck': {
+                                                                      'print_info': 'on',
+                                                                      'airfoil_stall_angles': {
+                                                                          '0': (-10 * np.pi / 180, 10 * np.pi / 180),
+                                                                          '1': (-10 * np.pi / 180, 10 * np.pi / 180),
+                                                                          '2': (-10 * np.pi / 180, 10 * np.pi / 180),
+                                                                      },
+                                                                      'output_degrees': 'on',
+                                                                  },
+                                                                  'WriteVariablesTime': {
+                                                                      'folder': route + '/output/',
+                                                                      'FoR_variables': ['for_pos',
+                                                                                        'for_vel',
+                                                                                        'for_acc',
+                                                                                        'quat'],
+                                                                      'FoR_number': [0],
+                                                                      'cleanup_old_solution': 'on',
+                                                                  }
+                                                                  }
+                                      }
 
         settings['BeamLoads'] = {'folder': route + '/output/',
                                  'csv_output': 'off'}
@@ -859,10 +971,6 @@ for alpha_deg in [0]:
                                 'include_applied_forces': 'on',
                                 'include_forward_motion': 'on'}
 
-        settings['AeroForcesCalculator'] = {'folder': route + '/output/',
-                                            'write_text_file': 'on',
-                                            'screen_output': 'on'}
-
         settings['AerogridPlot'] = {'folder': route + '/output/',
                                     'include_rbm': 'on',
                                     'include_forward_motion': 'off',
@@ -871,88 +979,52 @@ for alpha_deg in [0]:
                                     'u_inf': u_inf,
                                     'dt': dt}
 
-        settings['Modal'] = {'print_info': 'on',
-                             'use_undamped_modes': 'on',
-                             'NumLambda': num_modes,
-                             'rigid_body_modes': free_flight,
-                             'write_modes_vtk': 'on',
-                             'print_matrices': 'off',
-                             'write_data': 'on',
-                             'rigid_modes_cg': 'on'}
+        settings['Modal'] = {'print_info': True,
+                         'use_undamped_modes': True,
+                         'NumLambda': 30,
+                         'rigid_body_modes': True,
+                         'write_modes_vtk': 'on',
+                         'print_matrices': 'on',
+                         'write_data': 'on',
+                         'continuous_eigenvalues': 'off',
+                         'dt': dt,
+                         'plot_eigenvalues': False}
 
         settings['LinearAssembler'] = {'linear_system': 'LinearAeroelastic',
-                                       'linear_system_settings': {
-                                           'track_body': 'on',
-                                           'beam_settings': {'modal_projection': 'on',
-                                                             'inout_coords': 'modes',
-                                                             'discrete_time': 'on',
-                                                             'newmark_damp': 5e-4,
-                                                             'discr_method': 'newmark',
-                                                             'dt': dt,
-                                                             'proj_modes': 'undamped',
-                                                             'use_euler': 'on',
-                                                             'num_modes': num_modes,
-                                                             'print_info': 'on',
-                                                             'gravity': 'on',
-                                                             'remove_dofs': []},
-                                           'aero_settings': {'dt': dt,
-                                                             'ScalingDict': {'density': 1.0, #rho,
-                                                                             'length': 1.0, #chord_main * 0.5,
-                                                                             'speed': 1.0}, #u_inf},
-                                                             'integr_order': 2,
-                                                             'density': rho,
-                                                             'remove_predictor': True,
-                                                             'use_sparse': 'on',
-                                                             'vortex_radius': 1e-8,
-                                                             'remove_inputs': ['u_gust']},
-                                           'rigid_body_motion': free_flight,
-                                           'use_euler': 'on',
-                                       }
-                                       }
-
-        if rom:
-            settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method'] = ['Krylov']
-            settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method_settings'] = {
-                'Krylov': {'algorithm': 'mimo_rational_arnoldi',
-                           'frequency': [0.],
-                           'r': 1,
-                           'single_side': 'observability'}}
+                                        'linear_system_settings': {
+                                            'beam_settings': {'modal_projection': False,
+                                                              'inout_coords': 'nodes',
+                                                              'discrete_time': True,
+                                                              'newmark_damp': 0.05,
+                                                              'discr_method': 'newmark',
+                                                              'dt': dt,
+                                                              'proj_modes': 'undamped',
+                                                              'use_euler': 'off',
+                                                              'num_modes': 40,
+                                                              'print_info': 'on',
+                                                              'gravity': 'on',
+                                                              'remove_dofs': []},
+                                            'aero_settings': {'dt': dt,
+                                                              'integr_order': 2,
+                                                              'density': rho,
+                                                              'remove_predictor': False,
+                                                              'use_sparse': True,
+                                                              'rigid_body_motion': free_flight,
+                                                              'use_euler': False,
+                                                                  'remove_inputs': ['u_gust']},
+                                            'rigid_body_motion': free_flight}}
 
         settings['AsymptoticStability'] = {'sys_id': 'LinearAeroelastic',
-                                           'print_info': 'on',
-                                           'modes_to_plot': [],
-                                           'display_root_locus': 'off',
-                                           'frequency_cutoff': 0,
-                                           'export_eigenvalues': 'off',
-                                           'num_evals': 40,
-                                           'folder': route + '/output/'}
+                                            'print_info': 'on',
+                                            'modes_to_plot': [],
+                                            'display_root_locus': 'off',
+                                            'frequency_cutoff': 0,
+                                            'export_eigenvalues': 'off',
+                                            'num_evals': 40,
+                                            'folder': route + '/output/'}
 
-        settings['FrequencyResponse'] = {'folder': route + '/output/',
-                                         'target_system': ['aerodynamic'],
-                                         'frequency_spacing': 'linear',
-                                         'frequency_bounds': [0, 1],
-                                         'num_freqs': 1}
-
-        settings['SaveData'] = {'folder': route + '/output/' + case_name + '/',
-                                'save_aero': 'off',
-                                'save_struct': 'off',
-                                'save_linear': 'on',
-                                'save_linear_uvlm': 'on',
-                                'save_rom': 'on',
-                                'format': 'h5'
-                                }
-
-        settings['LinDynamicSim'] = {'folder': route + '/output/',
-                                     'n_tsteps': 10,
-                                     'dt': dt,
-                                     'postprocessors': ['AerogridPlot'],
-                                     'postprocessors_settings':
-                                         {'AerogridPlot': {'folder': route + '/output/',
-                                                           'include_rbm': 'on',
-                                                           'include_applied_forces': 'on',
-                                                           'minus_m_star': 0}, }
-                                     }
-
+        settings['SaveData'] = {'save_aero': 'on',
+                                    'save_struct': 'on'}
 
         import configobj
         config = configobj.ConfigObj()
@@ -967,7 +1039,3 @@ for alpha_deg in [0]:
     generate_fem()
     generate_aero_file()
     generate_solver_file()
-    generate_dyn_file()
-    generate_linear_sim_files(x0, input_vec)
-
-    sharpy.sharpy_main.main(['', cases_folder + '/' + case_name + '.sharpy'])

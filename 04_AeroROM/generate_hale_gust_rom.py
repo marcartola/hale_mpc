@@ -44,7 +44,7 @@ for alpha_deg in [0]:
     case_name += '_lm{:g}'.format(lumped_mass_factor)
 
     ## ROM
-    rom = False
+    rom = True
     # linear settings
     num_modes = 20
     case_name += '_rom{:g}_nmodes{:g}'.format(rom, num_modes)
@@ -901,10 +901,12 @@ for alpha_deg in [0]:
                                                                              'speed': 1.0}, #u_inf},
                                                              'integr_order': 2,
                                                              'density': rho,
-                                                             'remove_predictor': True,
+                                                             'remove_predictor': False,
                                                              'use_sparse': 'on',
                                                              'vortex_radius': 1e-8,
-                                                             'remove_inputs': ['u_gust']},
+                                                             #'remove_inputs': ['u_gust'],
+                                                             'gust_assembler' : 'LeadingEdge',
+                                                             'gust_assembler_inputs' : {}},
                                            'rigid_body_motion': free_flight,
                                            'use_euler': 'on',
                                        }
@@ -915,7 +917,7 @@ for alpha_deg in [0]:
             settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method_settings'] = {
                 'Krylov': {'algorithm': 'mimo_rational_arnoldi',
                            'frequency': [0.],
-                           'r': 1,
+                           'r': 2,
                            'single_side': 'observability'}}
 
         settings['AsymptoticStability'] = {'sys_id': 'LinearAeroelastic',

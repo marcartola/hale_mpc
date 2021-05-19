@@ -9,7 +9,7 @@ import sharpy.utils.algebra as algebra
 # for alpha_deg in [0, 1., 2., 3., 4.][::-1]:
 #for alpha_deg in [4.1514, 5.0, 4., 3. , 2. , 1., 0.]:
 for alpha_deg in [0]:
-    case_name = 'simple_HALE_nuvlm_tb_alpha{:04g}'.format(alpha_deg * 100)
+    case_name = 'simple_HALE_bal_rom_uvlm_tb_alpha{:04g}'.format(alpha_deg * 100)
 
     route = os.path.dirname(os.path.realpath(__file__)) + '/'
 
@@ -44,7 +44,7 @@ for alpha_deg in [0]:
     case_name += '_lm{:g}'.format(lumped_mass_factor)
 
     ## ROM
-    rom = False
+    rom = True
     # linear settings
     num_modes = 20
     case_name += '_rom{:g}_nmodes{:g}'.format(rom, num_modes)
@@ -901,7 +901,7 @@ for alpha_deg in [0]:
                                                                              'speed': 1.0}, #u_inf},
                                                              'integr_order': 2,
                                                              'density': rho,
-                                                             'remove_predictor': True,
+                                                             'remove_predictor': False,
                                                              'use_sparse': 'on',
                                                              'vortex_radius': 1e-8,
                                                              'remove_inputs': ['u_gust']},
@@ -911,12 +911,15 @@ for alpha_deg in [0]:
                                        }
 
         if rom:
-            settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method'] = ['Krylov']
+            settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method'] = ['Balanced']
             settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method_settings'] = {
-                'Krylov': {'algorithm': 'mimo_rational_arnoldi',
-                           'frequency': [0.],
-                           'r': 1,
-                           'single_side': 'observability'}}
+                'Balanced': {'algorithm': 'FrequencyLimited',
+                'algorithm_settings':{'frequency': 1.2,
+                'method_low': 'trapz',
+                'options_low': {'points': 12},
+                'method_high': 'gauss',
+                'options_high': {'partitions': 2, 'order': 8},
+                'check_stability': True }}}
 
         settings['AsymptoticStability'] = {'sys_id': 'LinearAeroelastic',
                                            'print_info': 'on',
@@ -938,7 +941,7 @@ for alpha_deg in [0]:
                                 'save_struct': 'off',
                                 'save_linear': 'on',
                                 'save_linear_uvlm': 'on',
-                                'save_rom': 'on',
+                                'save_rom': 'off',
                                 'format': 'h5'
                                 }
 
