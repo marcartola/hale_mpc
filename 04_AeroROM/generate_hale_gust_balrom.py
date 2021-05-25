@@ -9,7 +9,7 @@ import sharpy.utils.algebra as algebra
 # for alpha_deg in [0, 1., 2., 3., 4.][::-1]:
 #for alpha_deg in [4.1514, 5.0, 4., 3. , 2. , 1., 0.]:
 for alpha_deg in [0]:
-    case_name = 'balrom_alpha{:04g}'.format(alpha_deg)
+    case_name = 'balrom_gust_alpha{:04g}'.format(alpha_deg)
 
     route = os.path.dirname(os.path.realpath(__file__)) + '/'
 
@@ -904,7 +904,9 @@ for alpha_deg in [0]:
                                                              'remove_predictor': False,
                                                              'use_sparse': 'on',
                                                              'vortex_radius': 1e-8,
-                                                             'remove_inputs': ['u_gust']},
+                                                             #'remove_inputs': ['u_gust'],
+                                                             'gust_assembler' : 'LeadingEdge',
+                                                             'gust_assembler_inputs' : {}},
                                            'rigid_body_motion': free_flight,
                                            'use_euler': 'on',
                                        }
@@ -920,13 +922,6 @@ for alpha_deg in [0]:
                 'method_high': 'gauss',
                 'options_high': {'partitions': 4, 'order': 8},
                 'check_stability': True }}}
-            #settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method_settings'] = {
-            #    'Balanced': {'algorithm': 'Direct',
-            #    'algorithm_settings':{'tune': True,
-            #    'rom_tolerance': 0.1,
-            #    'rom_tune_freq_range': [0, 10],
-            #    'convergence': 'min'}}}
-
 
         settings['AsymptoticStability'] = {'sys_id': 'LinearAeroelastic',
                                            'print_info': 'on',

@@ -44,7 +44,7 @@ for alpha_deg in [0]:
     case_name += '_lm{:g}'.format(lumped_mass_factor)
 
     ## ROM
-    rom = False
+    rom = True
     # linear settings
     num_modes = 20
     case_name += '_rom{:g}_nmodes{:g}'.format(rom, num_modes)
@@ -915,7 +915,7 @@ for alpha_deg in [0]:
             settings['LinearAssembler']['linear_system_settings']['aero_settings']['rom_method_settings'] = {
                 'Krylov': {'algorithm': 'mimo_rational_arnoldi',
                            'frequency': [0.],
-                           'r': 1,
+                           'r': 4,
                            'single_side': 'observability'}}
 
         settings['AsymptoticStability'] = {'sys_id': 'LinearAeroelastic',

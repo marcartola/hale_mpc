@@ -4,7 +4,7 @@ import numpy as np
 import os
 import sharpy.utils.algebra as algebra
 
-channel = 4
+channel = 3
 case_name = 'simple_HALE_mpc_gust_case_puma_' + str(channel)
 route = os.path.dirname(os.path.realpath(__file__)) + '/'
 
@@ -875,14 +875,14 @@ def generate_solver_file():
                                       'variables_filename': inout_variables_file,
                                       'byte_ordering': 'big', # 'big',
                                       'input_network_settings': {
-                                          'address': 'ae-flutter',
+                                          'address': '129.31.242.18',
                                           'port': 65000+channel,
                                       },
                                       'output_network_settings': {
-                                          'address': 'ae-flutter',
+                                          'address': '129.31.242.18',
                                           'port': 64000+channel,
                                           'send_on_demand': 'off',
-                                          'destination_address': ['ae-ma19515'],
+                                          'destination_address': ['155.198.45.48'],
                                           'destination_ports': [63000+channel],
                                       }
                                   },
